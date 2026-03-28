@@ -1,5 +1,6 @@
 const stageWidth = window.innerWidth - 300;
 const stageHeight = window.innerHeight;
+let oldState = null;
 
 const stage = new Konva.Stage({
   container: "stage",
@@ -151,6 +152,9 @@ const deleteSelectedNode = () => {
       arrow.sourceNode === nodeToRemove ||
       arrow.targetNode === nodeToRemove
     ) {
+      if (arrow.linkLabel) {
+        arrow.linkLabel.destroy();
+      }
       arrow.destroy();
     } else {
       remainingConnections.push(arrow);
@@ -170,6 +174,13 @@ const deleteSelectedNode = () => {
 const deleteSelectedLink = () => {
   if (!selectedLink) {
     return;
+  }
+  if (selectedLink.linkLabel) {
+    selectedLink.linkLabel.destroy();
+  }
+  const index = connections.indexOf(selectedLink);
+  if (index > -1) {
+    connections.splice(index, 1);
   }
   selectedLink.destroy();
   selectedLink = null;
@@ -200,9 +211,29 @@ const getStagePointerPosition = (event) => {
   };
 };
 
+const truckImage = new window.Image();
+truckImage.src = "truck.png";
+truckImage.addEventListener("load", () => {
+  nodeLayer.batchDraw();
+});
+truckImage.onerror = () => {
+  console.warn("Could not load truck.png");
+};
+
+const machineImage = new window.Image();
+machineImage.src = "industrial_machine.png";
+machineImage.addEventListener("load", () => {
+  nodeLayer.batchDraw();
+});
+machineImage.onerror = () => {
+  console.warn("Could not load industrial_machine.png");
+};
+
 const createNode = (type, x, y, id, nodeData = {}) => {
   const width = 140;
-  const height = 70;
+  const imageHeight = 70;
+  const labelHeight = 24;
+  const gap = 6;
   const color = type === "truck" ? "#f97316" : "#2563eb";
   const label = type === "truck" ? "Truck" : "Machine";
 
@@ -213,27 +244,68 @@ const createNode = (type, x, y, id, nodeData = {}) => {
     name: "factory-node",
   });
 
-  const rect = new Konva.Rect({
-    width,
-    height,
-    fill: color,
-    stroke: "#0f172a",
-    strokeWidth: 2,
-    cornerRadius: 10,
-  });
+  let rect;
+
+  if (type === "truck" || type === "machine") {
+    rect = new Konva.Rect({
+      width,
+      height: imageHeight,
+      fill: color,
+      stroke: "#0f172a",
+      strokeWidth: 2,
+      cornerRadius: 10,
+    });
+
+    const imageNode = new Konva.Image({
+      image:
+        type === "truck"
+          ? truckImage.complete
+            ? truckImage
+            : null
+          : machineImage.complete
+            ? machineImage
+            : null,
+      width,
+      height: imageHeight,
+    });
+
+    group.add(rect);
+    group.add(imageNode);
+
+    const currentImage = type === "truck" ? truckImage : machineImage;
+    if (!currentImage.complete) {
+      currentImage.addEventListener("load", () => {
+        imageNode.image(currentImage);
+        rect.visible(false);
+        nodeLayer.batchDraw();
+      });
+    } else {
+      rect.visible(false);
+    }
+  } else {
+    rect = new Konva.Rect({
+      width,
+      height: imageHeight,
+      fill: color,
+      stroke: "#0f172a",
+      strokeWidth: 2,
+      cornerRadius: 10,
+    });
+    group.add(rect);
+  }
 
   const text = new Konva.Text({
     text: label,
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "Arial",
-    fill: "white",
+    fill: "black",
     width,
-    height,
+    height: labelHeight,
+    y: imageHeight + gap,
     align: "center",
     verticalAlign: "middle",
   });
 
-  group.add(rect);
   group.add(text);
   group.elementType = type;
   group.nodeData = {
@@ -299,7 +371,20 @@ const createArrow = (source, target, linkData = {}) => {
     notes: linkData.notes || "",
   };
 
-  const label = new Konva.Text({
+  const label = new Konva.Label({
+    opacity: 0.9,
+  });
+
+  label.add(
+    new Konva.Tag({
+      fill: "white",
+      stroke: "#d1d5db",
+      strokeWidth: 1,
+      cornerRadius: 4,
+    }),
+  );
+
+  const labelText = new Konva.Text({
     text: arrow.linkData.name || "",
     fontSize: 14,
     fontFamily: "Arial",
@@ -308,6 +393,7 @@ const createArrow = (source, target, linkData = {}) => {
     align: "center",
   });
 
+  label.add(labelText);
   arrow.linkLabel = label;
   const updateLabelPosition = () => {
     const midX = (sourceCenter.x + targetCenter.x) / 2;
@@ -351,7 +437,10 @@ const updateConnections = () => {
       arrow.linkLabel.position({ x: midX, y: midY });
       arrow.linkLabel.offsetX(arrow.linkLabel.width() / 2);
       arrow.linkLabel.offsetY(arrow.linkLabel.height() / 2);
-      arrow.linkLabel.text(arrow.linkData?.name || "");
+      const labelText = arrow.linkLabel.findOne("Text");
+      if (labelText) {
+        labelText.text(arrow.linkData?.name || "");
+      }
     }
   });
   connectionLayer.batchDraw();
@@ -382,9 +471,15 @@ const clearCanvas = () => {
   clearSelectedNode();
   clearSelectedLink();
   hideProperties();
-  connections.forEach((arrow) => arrow.destroy());
+  connections.forEach((arrow) => {
+    if (arrow.linkLabel) {
+      arrow.linkLabel.destroy();
+    }
+    arrow.destroy();
+  });
   connections.length = 0;
   nodeLayer.destroyChildren();
+  connectionLayer.destroyChildren();
   connectionLayer.batchDraw();
   nodeLayer.batchDraw();
 };
@@ -438,17 +533,28 @@ const downloadConfig = () => {
   setStatus("Config saved to factory-config.json.");
 };
 
-const handleLoadFile = (file) => {
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    try {
-      const state = JSON.parse(event.target.result);
-      loadState(state);
-    } catch (error) {
-      setStatus("Failed to parse config file.");
+const loadConfigFromUrl = async (url) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      setStatus(
+        `Failed to load config: ${response.status} ${response.statusText}`,
+      );
+      return;
     }
-  };
-  reader.readAsText(file);
+    const state = await response.json();
+
+    const newState = JSON.stringify(state);
+    if (newState === oldState) {
+      return;
+    }
+    oldState = newState;
+    loadState(state);
+    setStatus(`Loaded config from ${url}`);
+  } catch (error) {
+    console.warn("Unable to fetch config from server", error);
+    setStatus("Unable to load config from server.");
+  }
 };
 
 const handleNodeClick = (node) => {
@@ -503,7 +609,6 @@ const getDropCoords = (event) => {
 let draggedToolType = null;
 
 const saveButton = document.getElementById("saveConfig");
-const loadButton = document.getElementById("loadConfig");
 const loadConfigInput = document.getElementById("loadConfigInput");
 
 const stageContainer = stage.container();
@@ -517,7 +622,6 @@ toolboxItems.forEach((item) => {
 });
 
 saveButton.addEventListener("click", downloadConfig);
-loadButton.addEventListener("click", () => loadConfigInput.click());
 loadConfigInput.addEventListener("change", (event) => {
   const file = event.target.files[0];
   if (file) {
@@ -589,6 +693,11 @@ window.addEventListener("keydown", (event) => {
     setStatus("Selection cleared.");
   }
 });
+
+loadConfigFromUrl("http://localhost:8080/factory-config.json");
+setInterval(() => {
+  loadConfigFromUrl("http://localhost:8080/factory-config.json");
+}, 500);
 
 setStatus(
   "Drag a node onto the canvas to start building your factory schematic. Select a node and press Delete to remove it.",

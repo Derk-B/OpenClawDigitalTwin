@@ -3,10 +3,10 @@
     {
       "id": "node-1",
       "type": "machine",
-      "x": 374,
-      "y": 143,
+      "x": 448,
+      "y": 92,
       "data": {
-        "name": "",
+        "name": "unpacking machine 1",
         "rate": "",
         "cost": "",
         "notes": ""
@@ -15,10 +15,70 @@
     {
       "id": "node-2",
       "type": "truck",
-      "x": 103,
-      "y": 134,
+      "x": 35,
+      "y": 276,
       "data": {
         "name": "",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    },
+    {
+      "id": "node-3",
+      "type": "machine",
+      "x": 440,
+      "y": 245,
+      "data": {
+        "name": "unpacking machine 2",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    },
+    {
+      "id": "node-4",
+      "type": "machine",
+      "x": 463,
+      "y": 401,
+      "data": {
+        "name": "oven 1",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    },
+    {
+      "id": "node-5",
+      "type": "machine",
+      "x": 444,
+      "y": 598,
+      "data": {
+        "name": "oven 2",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    },
+    {
+      "id": "node-6",
+      "type": "machine",
+      "x": 763,
+      "y": 401,
+      "data": {
+        "name": "bread packaging machine 1",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    },
+    {
+      "id": "node-7",
+      "type": "machine",
+      "x": 744,
+      "y": 598,
+      "data": {
+        "name": "bread packaging machine 2",
         "rate": "",
         "cost": "",
         "notes": ""
@@ -29,6 +89,56 @@
     {
       "sourceId": "node-2",
       "targetId": "node-1",
+      "linkData": {
+        "name": "robot",
+        "rate": "45kg/hour",
+        "cost": "",
+        "notes": "3 robots x 15kg/hour"
+      }
+    },
+    {
+      "sourceId": "node-2",
+      "targetId": "node-3",
+      "linkData": {
+        "name": "robot",
+        "rate": "100kg/hour",
+        "cost": "2euro/hour",
+        "notes": ""
+      }
+    },
+    {
+      "sourceId": "node-2",
+      "targetId": "node-4",
+      "linkData": {
+        "name": "robot",
+        "rate": "45kg/hour",
+        "cost": "",
+        "notes": "3 robots x 15kg/hour"
+      }
+    },
+    {
+      "sourceId": "node-2",
+      "targetId": "node-5",
+      "linkData": {
+        "name": "robot",
+        "rate": "15kg/hour",
+        "cost": "",
+        "notes": "1 robot x 15kg/hour"
+      }
+    },
+    {
+      "sourceId": "node-4",
+      "targetId": "node-6",
+      "linkData": {
+        "name": "",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    },
+    {
+      "sourceId": "node-5",
+      "targetId": "node-7",
       "linkData": {
         "name": "",
         "rate": "",
