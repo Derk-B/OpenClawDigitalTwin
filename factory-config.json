@@ -1,0 +1,40 @@
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "machine",
+      "x": 374,
+      "y": 143,
+      "data": {
+        "name": "",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    },
+    {
+      "id": "node-2",
+      "type": "truck",
+      "x": 103,
+      "y": 134,
+      "data": {
+        "name": "",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    }
+  ],
+  "connections": [
+    {
+      "sourceId": "node-2",
+      "targetId": "node-1",
+      "linkData": {
+        "name": "",
+        "rate": "",
+        "cost": "",
+        "notes": ""
+      }
+    }
+  ]
+}

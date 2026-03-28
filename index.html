@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Factory Schematic with Konva.js</title>
+    <style>
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        display: flex;
+        min-height: 100vh;
+        background: #f4f7fb;
+        color: #111;
+      }
+
+      #toolbox {
+        width: 280px;
+        padding: 16px;
+        box-sizing: border-box;
+        background: #ffffff;
+        border-right: 1px solid #d9dee7;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      #toolbox h2 {
+        margin: 0 0 12px;
+        font-size: 1.1rem;
+      }
+
+      .tool-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 12px;
+        cursor: grab;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #f9fafb;
+        user-select: none;
+      }
+
+      .tool-item:hover {
+        border-color: #7f9cf5;
+        background: #eef2ff;
+      }
+
+      .tool-item span {
+        font-weight: 600;
+      }
+
+      .tool-item small {
+        color: #6b7280;
+      }
+
+      .tool-button {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1e293b;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease;
+      }
+
+      .tool-button:hover {
+        background: #dbeafe;
+        border-color: #93c5fd;
+      }
+
+      #status {
+        font-size: 0.95rem;
+        color: #334155;
+        padding: 12px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        min-height: 66px;
+        background: #f8fafc;
+      }
+
+      #canvas-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+        min-height: 100vh;
+        padding: 18px;
+        box-sizing: border-box;
+      }
+
+      #stage-parent {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%);
+        position: relative;
+      }
+
+      #stage {
+        width: 100%;
+        height: 100%;
+      }
+
+      .drop-hint {
+        position: absolute;
+        left: 18px;
+        bottom: 18px;
+        font-size: 0.9rem;
+        color: #475569;
+        background: rgba(255, 255, 255, 0.86);
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbox">
+      <h2>Toolbox</h2>
+      <div class="tool-item" draggable="true" data-tool="truck">
+        <span>Truck</span>
+        <small>Rectangular node</small>
+      </div>
+      <div class="tool-item" draggable="true" data-tool="machine">
+        <span>Machine</span>
+        <small>Rectangular node</small>
+      </div>
+      <div class="tool-item" draggable="true" data-tool="transport_link">
+        <span>Transport Link</span>
+        <small>Arrow connect mode</small>
+      </div>
+      <button id="saveConfig" class="tool-button" type="button">
+        Save config
+      </button>
+      <button id="loadConfig" class="tool-button" type="button">
+        Load config
+      </button>
+      <input
+        type="file"
+        id="loadConfigInput"
+        accept="application/json"
+        style="display: none"
+      />
+      <div
+        id="properties-panel"
+        style="
+          display: none;
+          margin-top: 16px;
+          padding: 14px;
+          border: 1px solid #cbd5e1;
+          border-radius: 12px;
+          background: #f8fafc;
+        "
+      >
+        <h3 id="propertiesTitle" style="margin: 0 0 8px; font-size: 1rem">
+          Properties
+        </h3>
+        <div
+          id="propertiesType"
+          style="margin-bottom: 10px; color: #475569; font-size: 0.95rem"
+        ></div>
+        <label style="display: block; margin-bottom: 10px; font-size: 0.95rem">
+          Name
+          <input
+            id="propertyName"
+            type="text"
+            style="
+              width: 100%;
+              margin-top: 6px;
+              padding: 10px;
+              border: 1px solid #cbd5e1;
+              border-radius: 10px;
+            "
+          />
+        </label>
+        <label style="display: block; margin-bottom: 10px; font-size: 0.95rem">
+          Rate / Capacity
+          <input
+            id="propertyRate"
+            type="text"
+            style="
+              width: 100%;
+              margin-top: 6px;
+              padding: 10px;
+              border: 1px solid #cbd5e1;
+              border-radius: 10px;
+            "
+            placeholder="e.g. 40 KG/hour or 10 prod/min"
+          />
+        </label>
+        <label style="display: block; margin-bottom: 10px; font-size: 0.95rem">
+          Cost
+          <input
+            id="propertyCost"
+            type="text"
+            style="
+              width: 100%;
+              margin-top: 6px;
+              padding: 10px;
+              border: 1px solid #cbd5e1;
+              border-radius: 10px;
+            "
+            placeholder="e.g. 100 euro/day"
+          />
+        </label>
+        <label style="display: block; margin-bottom: 12px; font-size: 0.95rem">
+          Notes
+          <textarea
+            id="propertyNotes"
+            rows="3"
+            style="
+              width: 100%;
+              margin-top: 6px;
+              padding: 10px;
+              border: 1px solid #cbd5e1;
+              border-radius: 10px;
+              resize: vertical;
+            "
+            placeholder="Optional details..."
+          ></textarea>
+        </label>
+        <button id="saveProperties" class="tool-button" type="button">
+          Save properties
+        </button>
+      </div>
+      <div id="status">
+        Drag a node onto the canvas to start building your factory schematic.
+      </div>
+    </div>
+    <div id="canvas-container">
+      <div id="stage-parent">
+        <div id="stage"></div>
+        <div class="drop-hint">Drop node from toolbox here</div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
